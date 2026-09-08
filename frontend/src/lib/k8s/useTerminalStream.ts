@@ -280,10 +280,17 @@ export function useTerminalStream(options: TerminalStreamOptions) {
     fitAddonRef.current = new FitAddon();
     xtermRef.current.xterm.loadAddon(fitAddonRef.current);
 
+    let cancelled = false;
+
     (async function () {
       const { stream, initialMessage } = await connectStream((items: ArrayBuffer) =>
         onData(xtermRef.current!, items)
       );
+
+      if (cancelled) {
+        stream.cancel();
+        return;
+      }
 
       if (initialMessage) {
         xtermRef.current?.xterm.writeln(initialMessage);
@@ -301,6 +308,7 @@ export function useTerminalStream(options: TerminalStreamOptions) {
     window.addEventListener('resize', resizeHandler);
 
     return function cleanup() {
+      cancelled = true;
       xtermRef.current?.xterm.dispose();
       streamRef.current?.cancel();
       window.removeEventListener('resize', resizeHandler);
